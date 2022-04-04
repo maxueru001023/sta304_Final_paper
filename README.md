@@ -1,8 +1,8 @@
 # sta304_Final_paper
 This repo is for final paper of STA 304, Winter 2022
-Authors: Xueru Ma
-Date: April 3rd, 2022
-Email: xueru.ma@mail.utoronto.ca
+-Authors: Xueru Ma
+-Date: April 3rd, 2022
+-Email: xueru.ma@mail.utoronto.ca
 
 It is organised as follows.
 # Overview of the paper: 
