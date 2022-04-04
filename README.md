@@ -1,11 +1,17 @@
 # sta304_Final_paper
 This repo is for final paper of STA 304, Winter 2022
+Authors: Xueru Ma
+Date: April 3rd, 2022
+Email: xueru.ma@mail.utoronto.ca
 
 It is organised as follows.
-- Overview: The code in this replication package constructs the analysis for Kearney, Levine, Pardue (2021) using Stata. One master file run all of the code to generate the data for the 4 figures in the paper, in addition to several statistics cited in the text.
+# Overview of the paper: 
+- The code in this replication package constructs the analysis for Kearney, Levine, Pardue (2021) using Stata. One master file run all of the code to generate the data for the 4 figures in the paper, in addition to several statistics cited in the text.
 
+# Repo Structure
 - LICENSE: Federal Reserve Bank of New York
-- inputs: data
+
+- inputs: the inputs include all datasets to finish this paper
   * Birth data
   * Population data
   * Long-term changes data
@@ -17,7 +23,7 @@ It is organised as follows.
   * paper.rmd: the r markdown file for the paper
   * reference.bib: the bib tex for the reference
 - final_paper.Rproj: the R project file for this paper
-
+ 
 - README.md
 - scripts: eight files in total
   * 01_figure1.r: plotting functions for the figure with label fig1
