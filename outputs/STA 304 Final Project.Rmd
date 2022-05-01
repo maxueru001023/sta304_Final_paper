@@ -1,0 +1,1068 @@
+---
+title: Analysis of General Social Survey 2021 with a focus on resident's time spent
+  online
+author: "Xueru Ma"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: bookdown::pdf_document2
+abstract: With the extensive application of the Internet in various fields, the time
+  spent on the Internet by the residents has shown a constant increase. We analyzed
+  the relationship between time spent online and age, income, education level, gender,
+  email hours, mental health, physical health, and quality of life. The dataset we
+  used was obtained from the General Social Servey 2021, selecting some of the variables
+  of interest, and we identified that respondents with lower age, weaker education
+  level and poorer quality of life evaluations exhibited a greater tendency to spend
+  more time online. Our analysis provides a guideline for future regulations of the
+  email hours, age, education level, mental health, physical health, quality of life
+  Internet access time of residents. \par\textbf{keywords:} time spent online, income,sex,
+thanks: 'Code and data are available at: https://github.com/maxueru001023/sta304_Final_paper.'
+subtitle: Age, Education level and Quality of life bring huge influence on Internet
+  access time
+toc: yes
+bibliography: references.bib
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r, echo = FALSE, warning = FALSE, message = FALSE, include=FALSE}
+# install.packages("knitr")
+# install.packages("tidyverse")
+# install.packages("ggplot2")
+# install.packages("patchwork")
+# install.packages("kableExtra")
+# install.packages("car")
+# install.packages("dplyr")
+# install.packages("haven")
+# install.packages("hrbrthemes")
+# install.packages("viridis")
+# install.packages("forcats")
+# install.packages("tidyr")
+
+# setup libraries 
+library(knitr)
+library(tidyverse)
+library(ggplot2)
+library(patchwork)
+library(kableExtra)
+library(car)
+library(dplyr)
+library(haven)
+library(hrbrthemes)
+library(viridis)
+library(forcats)
+library(tidyr)
+```
+
+
+
+
+```{r, include=FALSE}
+## load Data
+
+gss2021 <- read_dta("gss2021.dta")
+
+```
+
+
+```{r,include=FALSE}
+## data cleaning
+gss2021_cleaned <- gss2021 %>%
+  mutate(`educ_level` = case_when(
+    educ >= 1 & educ <= 6 ~ 'elementary school',
+    educ >= 7 & educ <=8 ~ 'middle school',
+    educ >= 9 & educ <=12 ~ 'high school',
+    educ >= 13 ~ 'college or above')) %>%
+  mutate(`age_group` = case_when(
+    age >= 10 & age <= 19 ~ '10-19',    # the first age group includes respondents with age between 10 and 19 years old
+    age >= 20 & age <=29~ '20-29',      # the second age group includes respondents with age between 20 and 29 years old
+    age >= 30 & age <= 39 ~ '30-39',    # the third age group includes respondents with age between 30 and 39 years old
+    age >= 40 & age <=49~ '40-49',      # the forth age group includes respondents with age between 40 and 49 years old
+    age >= 50 & age <=59~ '50-59',      # the fifth age group includes respondents with age between 50 and 59 years old
+    age >= 60 & age <=69~ '60-69',      # the sixth age group includes respondents with age between 60 and 69 years old
+    age >= 70 & age <=79~ '70-79',      # the seventh age group includes respondents with age between 70 and 79 years old
+    age >= 80 ~ '80+')) %>%             # the eighth age group includes respondents with age larger than 80 years old
+  filter(!is.na(wwwhr) & !is.na(income)  & !is.na(age) & !is.na(educ) & !is.na(emailhr) & !is.na(quallife) & !is.na(hlthphys) & !is.na(hlthmntl) & !is.na(sex) ) %>% 
+select(wwwhr,income,age,educ,emailhr,quallife,hlthphys,hlthmntl,age_group,educ_level,sex) 
+
+gss2021_data <- gss2021_cleaned
+
+## make sure everything is factor
+gss2021_cleaned$wwwhr <- as.numeric(gss2021_cleaned$wwwhr)
+gss2021_cleaned$income <- as.factor(gss2021_cleaned$income)
+gss2021_cleaned$age <- as.numeric(gss2021_cleaned$age)
+gss2021_cleaned$educ <- as.numeric(gss2021_cleaned$educ)
+gss2021_cleaned$emailhr <- as.factor(gss2021_cleaned$emailhr)
+gss2021_cleaned$quallife <- as.factor(gss2021_cleaned$quallife)
+gss2021_cleaned$hlthphys <- as.factor(gss2021_cleaned$hlthphys)
+gss2021_cleaned$hlthmntl <- as.factor(gss2021_cleaned$hlthmntl)
+gss2021_cleaned$age_group <- as.factor(gss2021_cleaned$age_group)
+gss2021_cleaned$educ_level <- as.factor(gss2021_cleaned$educ_level)
+gss2021_cleaned$sex <- as.factor(gss2021_cleaned$sex)
+
+# install.packages("pointblank")
+library(pointblank)
+agent <-
+  create_agent(tbl = gss2021_cleaned) %>%
+  col_is_factor(columns = vars(income, emailhr,quallife,hlthmntl,hlthphys,age_group,educ_level,sex)) %>%
+  col_is_numeric(columns = vars(wwwhr,age, educ)) %>% interrogate()
+# agent
+```
+
+\newpage
+
+# Introduction
+
+The Internet has invariably revolutionized cities, countries, and the entire world. As the Internet is adopted in more and more industries, people can find its traces almost everywhere in their life, work and studies. The Internet of Things integrates a large number of technologies and envisions a variety of things or objects around us that, through unique addressing schemes and standard communication protocols, are able to interact with each others and cooperate with their neighbors to reach common goals [@citeAtzori]. In life, people tend to choose the online social networking mode and communicate with their relatives, friends and colleagues through the social media; online shopping provides great convenience for people's consumption, residents only need to place orders on electronic devices and their expected products could be delivered to their doorsteps; online games provide relief from the stress in people's life and have become an indispensable entertainment in morden society. At work, people use the Internet to edit and transmit documents efficiently; they hold online meetings with colleagues to discuss the considerations in their work. In studies, professors send announcements and study materials to students through the Internet, and students learn through electronic textbooks rather than the real textbooks. As the Internet has boomed in different aspects, the amount of time people spend online has soared.The latest Digital 2019 report shows that people’re spending on average of 6 hours and 42 minutes online each day [@citeMatthew]. It is identical to say that more than 100 days are spent online every year for each Internet user. That even accounts for more than 27 percent of time of a year. In 2021, the number of people using the Internet worldwide reached 4.66 billion, which is an increase of 316 million people from the same period last year. The global Internet penetration rate is 59.5%. Currently, there are 4.2 billion social media users across the world. These staggering statistics show the enormous amount of Internet users and the significant average time spent online by Internet users.
+
+The data was collected from December 2020 to May 2021 by National Organization Research Office (NORC) at the University of Chicago.The General Social Survey 2021 had a sample size of 27,591 adults who were 18 or older in the United States as well as living in noninstitutional housing at the time of interviewing.
+
+The residents in the United States pay a lot of attention to the Internet. Almost everyone spends a certain amount of time online each week. According to the survey released by the market research firm Forrester Research, the amount of time Americans spend online has increased by 121 percent over the past five years. Adults under 30 years old spend about 12 hours per week online; and the people over 66 years old spend about eight hours per week online. Forty percent of U.S. Internet users' time is spent on three activities, namely social networking sites, gaming and email. This phenomenon has also led to a steady decline in the percentage of time spent online by other Internet activities. In terms of Internet assess time, significant differences were detected among respondents in terms of different genders. Residents with higher education level tends to use the Internet in a more reasonable time interval. The younger respondents seem to be more addicted to the Internet, and they will spend more time using the Internet than the older individuals.
+
+This paper explores the distribution of time spent online by respondents and attempts to relate it to eight factors, including gender, age, income, education, length of email, quality of life, physical health, and mental health, to analyze the time spent time spent online of Americans who were 18 or older and lived in noninstitutional housing in 2021. Factors were chosen in consideration of literature and also what studies have repeatedly highlighted to be affecting the amount of time spent online in the real life: low family income, poor self-control ability due to younger age, fairly low education level, worse evaluations in terms of meantal health and physical health, are the most backward issues influencing the accessed time online. In addition, based on the existing data of Internet access time, we also predicted the average distribution of Internet access time for the whole country, utilizing the above factors to analyze the tendency of Internet use by macro-national residents.
+
+The remainder of the whole paper is divided into six parts. Section 2 illustrates the data source and the methodology conducted in the analysis, as well as the main characteristics of our selected data. Section 3 demonstrates the linear regression model between time spent online and predictors. The fourth part is about data simulation and the exploration on confidence interval. Section five shows the relationship between time spent online and other factors that we obtained through methodology. Section 6 discusses the results we found as well as the weaknesses and limitations of this paper. The last part is the appendix, in which we show the supplementary figures and tables for our paper.
+
+
+
+# Data
+
+## Data Source
+
+This paper applies the time spent online of the residents obtained from the General Social Survey 2021(GSS 2021). The GSS has been administered by NORC at the University of Chicago (NORC) and funded by the National Science Foundation (NSF) since its inception. Currently, the GSS is designed by a set of Primary Investigators (PIs), with input from the GSS Board, comprised of notable researchers within the scientific community. 
+
+R studio [@citeR]is used to process the code and complete the analysis. The package 'tidyverse' [@citetidyverse] is then used to gather the data. The package 'knitr' [@citeknitr]enables integration of R code into LaTeX, allowing reproducible research in R through the means of literate programming. The package 'car' [@citecar] compliments applied regression techniques by providing numerous functions that perform tests, creates visualizations, and transform data. The package 'dplyr' [@citedplyr] provides a consistent set of verbs that help us solve the most common data manipulation challenges. The package 'haven' [@citehaven] enables R to read and write various data formats used by other statistical packages. The package 'tidyr' [@citetidyr] makes it easy to “tidy” our data.
+\newline
+
+The package 'ggplot' [@citeggplot2] is used for making the figures and graphs for the analysis. The package 'patchwork' [@citepatchwork] is applied to make plot composition in R extremely simple and powerful. The package 'kableExtra' [@citekableExtra] is used to extend the basic functionality of tables produced using knitr::kable(). The package 'hrbrthemes' [@citehrbrthemes] offers extra 'ggplot2' themes, scales and utilities, including a spell check function for plot label fields and an overall emphasis on typography. The package 'viridis' [@citeviridis] improves graph readability for readers with common forms of color blindness and/or color vision deficiency. The package 'forcats' [@citeforcats] reorders factor levels and modifies factor levels. 
+
+
+## Methodlogy
+
+### General Social Survey 2021 Methodlogy 
+The General Social Survey 2021 is a national representative survey in the United States. The survey was conducted by 27,591 adults 18 or older in the United States who live in noninstitutional housing at the time of interviewing. This report summarizes the findings of the General Social Servey(GSS) 2021. The GSS 2021 collects data on American society to monitor and explain trends in opinions, attitudes, and behaviors. The GSS 2021 has adapted questions from earlier surveys, combing with some of the issues occurring in real time. The GSS has been administered by NORC at the University of Chicago (NORC) and funded by the National Science Foundation (NSF) since its inception. Currently, the GSS is designed by a set of Primary Investigators (PIs), with input from the GSS Board, comprised of notable researchers within the scientific community. The GSS 2021 contains a standard core of demographic, behavioral, and attitudinal questions, plus topics of special interest. The GSS staff conducted an independent fresh cross-sectional address-based sampling push-to-web study (referred to in this document as the 2021 GSS Cross-
+section but also known as the 2020 cross-sectional survey in previous documents). This survey provides details of the second study—namely, the 2021 GSS Cross-section, where newly selected respondents answered a GSS questionnaire from December 2020 to May 2021. We refer to the second study as the 2021 GSS Cross-section because the majority of the data was collected in 2021. 
+
+GSS variables appear at three different frequencies. Items in the Replicating Core, Household Composition, and Contact/Validation typically appear every year and are rarely altered (although, in 2020, they feature modification for the web mode). Items in some topical modules, such as ISSP modules, can appear in multiple years, but not every year. Finally, items on the rest of the topical modules typically only appear in a single year. In the 2021 GSS, the NSF Science Knowledge and Attitudes (reduced set of questions), Healthy People, ISSP Social Inequality, and ISSP Environment modules are repeats from previous years, while the Social Inequality (sponsored), Religion (sponsored), and Board-Initiated modules are new.
+
+Due to the global COVID19 pandemic, the 2021 GSS implemented significant methodological adaptions for the safety of respondents and interviewers. Since its inception, the GSS has traditionally used in-person data collection as its primary mode of data collection. However, the 2021 GSS Cross-section used an address-based sampling with push to web and a web self-administered questionnaire, with phone interviews as a secondary mode. While the data will contribute to our understanding of society, any changes in public opinion seen in the 2021 GSS data could be due to either changes in actual opinion and/or changes the GSS made in the methodology to adapt to COVID-19. When evaluating the GSS for trend changes over time, the GSS staff caution their users to carefully consider changes in the GSS methodology from a total survey error perspective, examining how a change they are observing in a trend may have been impacted by the methodological differences employed in 2021. Total survey error is a way of comprehending the impact on estimates due to measurement, non-response, coverage, and sampling error. 
+
+### Data Cleaning Methodlogy
+
+I select the 9 variables from the GSS 2021 raw dataset, which are income,age,educ,emailhr,quallife,hlthphys,hlthmntl,age_group,educ_level,sex. By applying the 'mutate' function, I replace the numbers under variable educ by corresponding education levels, substitute the numbers under variable age by corresponding age group, making it easier to observe the selection of the respondents. With the 'filter' function , I deleted all of the missing responses existing under the variables of our interests. Finally, by the 'select' function, I choose all variables necessary in this analysis to conduct my cleaned dataset.
+
+
+## Data Description
+
+The glimpse of the final dataset that we cleaned is shown in Table \@ref(tab:table1) below.
+
+```{r table1,echo=FALSE,message =FALSE, results='asis'}
+#label each education level with their corresponding meaning
+levels(gss2021_cleaned$income) <-c("under $1000", "$1,000 to $2,999","$3,000 to $3,999","$4,000 to $4,999","$5,000 to $5,999","$6,000 to $6,999","$7,000 to $7,999","$8,000 to $9,999","$10,000 to $14,999","$15,000 to $19,999","$20,000 to $24,999","$25,000 or more","refuesed")
+levels(gss2021_cleaned$quallife) <-c("EXCELLENT","VERY GOOD","GOOD","FAIR","POOR")
+levels(gss2021_cleaned$hlthphys) <-c("EXCELLENT","VERY GOOD","GOOD","FAIR","POOR")
+levels(gss2021_cleaned$hlthmntl) <-c("EXCELLENT","VERY GOOD","GOOD","FAIR","POOR")
+levels(gss2021_cleaned$sex) <-c("male","female")
+
+kable(gss2021_cleaned[1:10,], caption = "Clean Dataset") %>%
+  kable_styling(font_size = 5, full_width = F ,position = "center", latex_options = "HOLD_position")
+
+```
+
+As Table \@ref(tab:table1) shown, there are 11 variables that are:
+\newline
+
+- wwwhr: The amount of hours respondents spend online per week. This is a numeric variable.  
+
+
+- income: The income level of the respondents, which is divided into 12 intervals except for refused. This is a categorical variable.  
+
+
+
+- age : The exact age of the respondents.This is a numeric variable.  
+
+
+- educ: The number of years that the respondent has accepted for education. This is a numeric variable. 
+
+
+- emailhr:  The number of hours respondent spent on sending emails. This is a numeric variable.  
+
+
+- quallife: The evaluation of respondent on his/her quality of life, which is divided into 5 categories. This is a categorical variable.  
+
+
+
+- hlthphys: The evaluation of respondent on his/her physical health, which is divided into 5 categories. This is a categorical variable.
+
+
+- hlthmntl: The evaluation of respondent on his/her mental health,  which is divided into 5 categories. This is a categorical variable. 
+
+
+- age_group: The age group of the respondents, which is divided into 8 intervals. This is a categorical variable. 
+
+
+
+- educ_level: The education level of the respondents, which is divided into 4 categories. This is a categorical variable. 
+
+
+
+- sex: The gender of the respondents, which is divided into 2 categories. This is a categorical variable. 
+
+
+## Strength
+This questionnaire is very informative covering a wide range of areas, it contains 565 different questions including a standard core of demographic, behavioral, and attitudinal questions, plus topics of special interest. We can use this questionnaire not only to study the relationship between the amount of time spent online and some personal characteristics, but also to investigate many issues related to civil liberties, crime and violence, intergroup tolerance, morality, national spending priorities, psychological well-being, social mobility, and stress and traumatic events. The content of this questionnaire is less limited and there is a great deal of research that can be done based on this questionare.
+
+
+## Weaknesses
+We are all aware that the United States is a country of immigrants gathering people from all over the world. According to statistics, there are between 350 and 430 languages spoken in the United States of America [@citeKazuki]. However, this questionnaire is only available in English and Spanish. Although we know that English and Spanish are the most widely spoken languages in the United States, there is still a segment of the population that is not fluent in English and Spanish. It was difficult for this group of people to participate in the survey.
+
+\newpage
+## Key Features
+
+### Time spent online
+```{r time-plot, fig.cap = "The distribution of time spent online and the email hours" , echo = FALSE, warning=FALSE}
+# install.packages("ggpubr")
+library(ggpubr)
+#create graph
+ ggplot(data=gss2021_cleaned,aes(x=wwwhr))+geom_histogram(fill="#69b3a2",color="black",alpha = 0.7,bins = 30) +
+  theme_classic() +
+  labs(x = "www hour per week", y = "Amount of Respondents", title = "Respondents' time of access to the Internet")
+
+```
+
+Figure \@ref(fig:time-plot) depicts the distribution of weekly Internet browsing time of the respondents. As we can see, the number of hours spent online is mainly concentrated in the range of 0-50 hours. It is observed that the largest amount of respondents, even more than 600, spend 8-14 hours per week on the Internet. When the time spent online exceeds 14 hours, we find that with an increasing number of hours spent online, the number of corresponding respondents is continuously reducing. Since we notice that this histogram is organized in right skewed distribution, it is clear that the majority of respondents have less time on the Internet and only a small amount of respondents spend very long periods of time on the Internet.
+
+
+
+
+\newpage
+
+### Income level
+```{r 2, fig.cap = "The majority of respondents have medium to high household incomes" , echo = FALSE}
+#label each education level with their corresponding meaning
+levels(gss2021_cleaned$income) <-c("under $1000", "$1,000 to $2,999","$3,000 to $3,999","$4,000 to $4,999","$5,000 to $5,999","$6,000 to $6,999","$7,000 to $7,999","$8,000 to $9,999","$10,000 to $14,999","$15,000 to $19,999","$20,000 to $24,999","$25,000 or more","refuesed")
+#create graph
+ggplot(gss2021_cleaned, aes(x = income, fill = income)) + 
+  geom_bar(alpha = 0.7) + 
+  theme_classic() +
+  labs(x = "Total Family Income Group ", y = "Amount of Respondents", title = "2021 US GSS Respondent's Family Income",
+       fill = "Family Income Group")+
+  theme( axis.text.x = element_blank())
+```
+
+Figure \@ref(fig:2) presents the intervals of household income of the respondents. We find a left-skewed trend in the figure distribution, with very few respondents having household incomes below 10,000 dollars, therefore we can infer that only a small percentage of respondents have low family incomes within the total sample. Interestingly, we find that people's responses are mainly concentrated in the $25,000+ range. It reflects the relatively high level of income among the respondents. However, due to the fact that the questionnaire categorizes respondents with household incomes greater than or equal to 25,000 dollars into a whole bracket, we are unable to observe whether the income gap between the affluent and mid-class respondents is very large. Generally speaking, there are fewer low-income groups among the respondents, the majority of the respondents have household incomes higher than average.
+
+
+
+\newpage
+
+### Time spent on sending emails
+```{r 3, fig.cap = "Respondents spend a wide range of time on emailing each week" , echo = FALSE}
+#create graph
+ggplot(data=gss2021_cleaned,aes(x= as.numeric(emailhr)))+geom_histogram(fill="#69b3a2",color="black",alpha = 0.7,bins = 30) +
+  theme_classic() +
+  labs(x = "Email Hours Per Week", y = "Amount of Respondents", title = "2021 US GSS Respondents' email hours")
+```
+
+Figure \@ref(fig:3) illustrates the distribution of respondents' weekly emailing hours. We observe that respondents spend a wide range of time on emailing each week, but the majority of them spend 0-13 hours on sending emails, which is relatively short time each week. Among them, the largest number of respondents indicated that they spent 1.5-3 hours per week on posting emails. The number of respondents who spent 0-1.5 hours, 3-4.5 hours, 4.5-6 hours and 6-7.5 hours on emailing was very similar, with about 170 respondents. Since the entire distribution shows right-skewed trends, we realize that the very minority of respondents spend long periods of time on sending emails, but there exists a fraction of respondents who devote extremely large amounts of time to emails. Therefore, we infer that most people spend some time on sending emails for work and social reasons, but usually it does not take up too much of their time, However, there exists a small group of respondents who dedicate a lot of time on emails probably due to the requirements of their work. 
+
+\newpage
+### Quality of life
+```{r 4, fig.cap = "Most respondents have relatively positive evaluations of their current quality of life" , echo = FALSE}
+#label each education level with their corresponding meaning
+levels(gss2021_cleaned$quallife) <-c("EXCELLENT","VERY GOOD","GOOD","FAIR","POOR")
+#create graph
+ggplot(gss2021_cleaned, aes(x = quallife, fill = quallife)) + 
+  geom_bar(alpha = 0.7) + 
+  theme_classic() +
+  labs(x = "Evaluations on quality of life ", y = "Amount of Respondents", title = "2021 US GSS Respondent's ratings of quality of life",
+       fill = "choice")+
+  theme( axis.text.x = element_blank())
+```
+
+Figure \@ref(fig:4) presents the respondents' evaluation of their quality of life. The ratings are divided into five main levels, namely excellent, very good, good, fair and poor. We found that the number of respondents who assessed their quality of life as excellent was about 250, which is less than the number of respondents who chose very good and good. It reflects that most people still think there could be some improvements in their quality of life and they are not completely satisfied with their life at this stage. We observe that the number of respondents who chose very good is almost 800, making it the most popular choice among the respondents. Similarly, the number of respondents who chose good is also relatively high. Among the respondents, less than two hundred people chose fair, whereas we also noticed that very few people chose poor.
+By combining these points, we find that most people are not 100% satisfied with their current life, but they still have a relatively positive evaluation of their current quality of life.
+
+
+
+\newpage
+### Physical health
+```{r 5, fig.cap = "A significant proportion of respondents are still concerned about their physical health" , echo = FALSE}
+#label each education level with their corresponding meaning
+levels(gss2021_cleaned$hlthphys) <-c("EXCELLENT","VERY GOOD","GOOD","FAIR","POOR")
+#create graph
+ggplot(gss2021_cleaned, aes(x = hlthphys, fill = hlthphys)) + 
+  geom_bar(alpha = 0.7) + 
+  theme_classic() +
+  labs(x = "Evaluations on physical health ", y = "Amount of Respondents", title = "2021 US GSS Respondent's ratings of physical health",
+       fill = "choice")+
+  theme( axis.text.x = element_blank())
+```
+
+Figure \@ref(fig:5) provides an overview of the distribution of the respondents' ratings of their physical health. Similarly, the assessments are categorized into five levels: excellent, very good, good, fair and poor.
+Among the relatively positive ratings, the number of respondents decreases as people's satisfaction with their health improves. It reflects the fact that only a small proportion of respondents are completely satisfied with their current physical status, while most people are not completely confident about their physical health. We found that the largest number of respondents chose the option of good, as over 600 respondents consider their current physical health to be in a relatively average state, not particularly good, but not bad either. Compared with the previous evaluations of quality of life, we find that people's evaluation of physical health is not that positive, and it seems that the number of people choosing fair and poor has increased a lot. A significant proportion of respondents are still concerned about their physical health.
+
+
+\newpage
+### Mental health
+```{r 6, fig.cap = "the spike in the number of people choosing very good option reveals an increased level of satisfaction with people' s mental health status" , echo = FALSE}
+#label each education level with their corresponding meaning
+levels(gss2021_cleaned$hlthmntl) <-c("EXCELLENT","VERY GOOD","GOOD","FAIR","POOR")
+#create graph
+ggplot(gss2021_cleaned, aes(x = hlthmntl, fill = hlthmntl)) + 
+  geom_bar(alpha = 0.7) + 
+  theme_classic() +
+  labs(x = "Evaluations on mental health ", y = "Amount of Respondents", title = "2021 US GSS Respondent's ratings of mental health",
+       fill = "choice")+
+  theme( axis.text.x = element_blank())
+```
+
+Figure \@ref(fig:6) demonstrates the distribution of respondents' responses to their mental health evaluations. Like the previous evaluations, the assessment of mental health was classified into 5 levels: excellent, very good, good, fair and poor. Nearly 300 respondents rated their mental health status as excellent, a significantly higher number than those who chose this option for the quality of life and physical health ratings. Respondents seemed to be more positive about their mental health status. In addition, the spike in the number of people choosing very good option also reveals an increased level of satisfaction with people' s mental health status. More than 600 people believe they have very good mental health currently. The number of people who selected for this option even surpassed the most popular option in the previous assessment, which is good. It is notable that about 550 people feel that their mental health status is on the good scale. Most people have very aggressive ratings for mental health. Only a small percentage of respondents felt that their current mental state was fair or poor.
+
+\newpage
+### Age group
+```{r 7, fig.cap = "In most cases, respondents were in the 20 to 69 age range" , echo = FALSE}
+#create graph
+ggplot(gss2021_cleaned, aes(x = age_group, fill = age_group)) + 
+  geom_bar(alpha = 0.7) + 
+  theme_classic() +
+  labs(x = "Age Group ", y = "Amount of Respondents", title = "2021 US GSS Respondent's Age Group",
+       fill = "Respondent's Age Group")+
+  theme( axis.text.x = element_blank())
+```
+
+Figure \@ref(fig:7) displays the age distribution of the respondents. It can be observed that almost no respondents are in the age range of 10-19 years old. In addition, the number of respondents whose age is between 20 and 29 years old is less than 200. It seems that in our survey, there are only limited number of respondents in the lower age range. The amounts of respondents in the 30-39, 40-49, 50-59 and 60-69 age ranges are very close to each other, with the number of respondents in these age groups being around 350. Moreover, we could identify that there are only a small number of respondents who are over 70 years old, accounting for a small percentage of the total number of respondents. In general, the age distribution of respondents was mainly in the 30-69 age range, with the majority of respondents being middle-aged.
+
+
+
+\newpage
+### Education level
+```{r 8, fig.cap = "Most of the respondents have received education beyond high school or college level" , echo = FALSE}
+#create graph
+ggplot(gss2021_cleaned, aes(x = educ_level, fill = educ_level)) + 
+  geom_bar(alpha = 0.7) + 
+  theme_classic() +
+  labs(x = "Level of Education", y = "Amount of Respondents", title = "2021 US GSS Respondent's Education Level",
+       fill = "Level of Education")+
+  theme( axis.text.x = element_blank())
+```
+
+Figure \@ref(fig:8) reveals the distribution of education levels of the respondents. The graph shows that over 1,300 respondents indicated that they have completed college or higher education. About 400 respondents received high school education. Only a few respondents indicated that they had only attended elementary or junior high school. This phenomenon reflects the fact that the average education level of people in the United States is very high, and most people have access to at least high school education.
+
+\newpage
+### Gender
+```{r 9, fig.cap = "There were obviously more female respondents than male respondents" , echo = FALSE}
+#label each education level with their corresponding meaning
+levels(gss2021_cleaned$sex) <-c("male","female")
+#create graph
+ggplot(gss2021_cleaned, aes(x = sex, fill = sex)) + 
+  geom_bar(alpha = 0.7) + 
+  theme_classic() +
+  labs(x = "Gender ", y = "Amount of Respondents", title = "2021 US GSS Respondent's Gender",
+       fill = "Sex")+
+  theme( axis.text.x = element_blank())
+```
+
+Figure \@ref(fig:9) exhibits the gender distribution of the respondents. We find that the number of male respondents is close to 1000, while the total amount of female respondents is only approximately 800. Based on our common sense, we realize that the ratio of male respondents to female respondents should be close to 1:1, whereas here the number of male respondents is much higher than the number of female respondents, which reflects the gender imbalance in our respondent group.
+
+
+
+
+\newpage
+# Model
+## Linear Regression Model 
+
+```{r, echo = FALSE, include=FALSE}
+gss2021_cleaned <- gss2021_cleaned  %>% mutate(logwwwhr = log(wwwhr))%>%
+  filter(logwwwhr != -Inf)
+# Choose a starting model 
+m1 = lm((wwwhr)~income+age+educ+as.numeric(emailhr)+quallife+hlthphys+hlthmntl+sex, data = gss2021_cleaned)
+summary(m1)
+vif(m1)
+```
+
+Firstly,we choose a starting model with the response variable wwwhr and 8 potential predictors, which are income, age, educ, emailhr, quallife, hlthphtys, hlthmntl and sex.
+Then we need to ensure that there’s no multicollinearity presented in our model since the multicollinearity can make our important variables look unimportant by expanding the variance of all predictors. Under the impact of multicollinearity, we will get inaccurate conclusions when choosing our model based on the p-value of each predictor. We will only select the predictors with low variance inflation factors which are less or equal to 5. After observation, the variance inflation factors of all chosen predictors are smaller than 5 so no predictor should be removed.
+
+
+```{r y1, echo=FALSE, include=FALSE}
+y_hat <- fitted (m1)
+y_i <- gss2021_cleaned$logwwwhr
+
+plot(y_i,y_hat)
+```
+
+```{r pair1, fig.cap="11", echo=FALSE, include=FALSE}
+pairs(~income+as.numeric(age)+as.numeric(educ)+as.numeric(emailhr)+quallife+hlthphys+hlthmntl+sex, data = gss2021_cleaned)
+
+pairs(~age+educ, data = gss2021_cleaned)
+```
+
+$$Table\, 2: The \; condition \; table$$
+
+Condition   | Request  
+------------|-------------------------------------------------------------------------------------------
+Condition 1 | Conditional mean response is a single function of a linear combination of the predictor
+Condition 2 | Conditional mean of each predictor is a linear function with another predictor
+
+After that, we need to check the 2 conditions to make sure that we can use redsidual plots to disgnose the model. In condition checking part, for condition 1, the conditional mean response is a single function of a linear combination of the predictors. We observed that there is a pattern between the real value $y_i$(wwwhr) and the fitted value $\hat{y}$, and the shape of the graph is not in a fanning pattern, so it satisfies the condition 1. For condition 2, the conditional mean of each predictor is a linear function with another predictor. We observed that there are no relations between the predictors, so it satisfies the condition 2. Thus we can use residual plot to explore what exactly is being violated.
+
+
+```{r res1, echo=FALSE, include=FALSE}
+# Residual plots
+res <- rstandard (m1)
+y_hat <- fitted(m1)
+
+plot(y_hat,res)
+
+plot(gss2021_cleaned$age, res)
+plot(gss2021_cleaned$educ, res)
+```
+
+```{r , echo=FALSE, include=FALSE}
+qqnorm(res)
+qqline(res)
+```
+Then we need to use residual plots to identify potential violations against model assumptions, there are four assumptions that need to be satisfied in order to apply the multiple linear regression model. 
+\newline
+1. linearity
+\newline
+2. normality 
+\newline
+3. constant variance
+\newline
+4. uncorrelatedness
+\newline
+
+In the residual vs. fitted plot, there is no obvious pattern shown here. However, there is a potential linear relationship in the residual vs. fitted plot and a small positive linear trend in the residual vs. age plot.  These two figures indicates that there might exist the violation of the independence of linear model. In the residual vs age plot, we indicate that the plots have no fanning pattern, so we can conclude that there's no violation in the model's constant variance assumption. In the residual Q-Q plot, the points are mostly distributed around the line with angel of 45 degrees. Also, there is no obvious deviation, so there is no violation in he normality assumption of the model.
+By the assumption check, I found that there are violations in the model's independence assumption for the residual vs. fitted plot and residual vs. age plot. In order to avoid the violations, we did model transformation by applying box-cox transformation. We get the estimated power of each predictor, forming a transformed model here. The powerTransform is used to determine numerical variable transformation. The following table 3 shows the transformation. 
+
+\newpage
+$$Table\, 3: The \; transformation \; table$$
+
+|Variable Name|Est. Power|Round Power|
+|:---:|:--:|:----:|
+|wwwhr|0.0830 |0.08|
+|age|0.7066|0.71|
+
+```{r, include=FALSE, warning=FALSE, include=FALSE}
+# explore model transformations to correct assumption violations
+library(car)
+summary(powerTransform(cbind(gss2021_cleaned$wwwhr,
+                             gss2021_cleaned$age)))
+
+gss2021_cleaned_trans <- gss2021_cleaned %>%
+  mutate(wwwhr_trans = wwwhr^0.08,age_trans = age^0.71)
+```
+
+By the estimated power, I mutated a new variable wwwhr_trans and referring the value of that as wwwhr^0.08, similarly, I muatated age_trans as age^0.71. So the numerical variables are transformed to normality, such that it can satisfy the assumption of independence. A new model, model_trans is generated by using the transformed variables, with the response variable: wwwhr_trans and 8 predictors, which are income, age_trans, educ, emailhr, quallife, hlthphys, hlthmntl and sex. Then, it is necessary to re-assess condition 1 and condition 2 of the transformed model.By repeating the steps as above, I used yi vs. y_hat model and pairs plots to test condition 1 and 2. It is obvious that the condition 1 is satisfied because there is a pattern between the real yi and fitted value y hat, and the shape of the graph is not fanning patter.The condition 2 is also satisfied because there is no linear relationship between predictors.
+
+```{r, echo = FALSE, include=FALSE}
+model_trans <- lm(wwwhr_trans~income+age_trans+educ+as.numeric(emailhr)+quallife+hlthphys+hlthmntl+sex,data = gss2021_cleaned_trans)
+#vif(model_trans)
+```
+
+```{r, echo = FALSE, include=FALSE}
+y_hat <- fitted(model_trans)
+y_i <- gss2021_cleaned_trans$wwwhr_trans
+plot(y_i, y_hat)
+```
+
+```{r, echo = FALSE, include=FALSE}
+pairs(~income+age_trans+educ+as.numeric(emailhr)+quallife+hlthphys+hlthmntl+sex,data = gss2021_cleaned_trans)
+
+pairs(~age_trans+educ,data = gss2021_cleaned_trans)
+```
+
+The residual plots is used on the transformed model to see whether it is an important model over the original model. There is no obvious pattern in the residual vs. transformed age and transformed y indicating that there is no violation in the model's independence assumptions now. Also the plots are not in a fanning pattern, so there is no violations in the model's constant variance assumptions. The QQ plot fits more line than the last QQ plot, which indicates that there is no violation in the normality assumption of the model. Thus, all assumptions are satisfied in the transformed model. 
+
+```{r , echo = FALSE, include=FALSE}
+# Residual check
+res <- rstandard(model_trans)
+y_hat<- fitted(model_trans)
+
+plot(y_hat, res)
+plot(gss2021_cleaned_trans$age_trans, res)
+
+qqnorm(res)
+qqline(res)
+```
+
+
+```{r, include=FALSE, include=FALSE}
+# remove useless predictors
+summary(model_trans)
+```
+
+Since all of the assumptions of linear regression model are satisfied now, the linear model should be conducted by using the transformed dataset. 
+By comparing the p-value of each predictors, the predictors with lower p-value is keeped, which indicates that it is significant predictor. 
+\newline
+The only variable that was deleted was hlthphys, indicating that there is no significant linear relationship between the physical health and the time people spend on internet. 
+\newline
+M2 is the reduced model after deleting the variable hlthphys. After using partial F-test, the p-value for the reduced model is 0.4458, which is larger than the significance level 0.05. Thus, we can conclude that the reduced model is better than the original model after transformation. 
+\newline
+The next step is to check two conditions to make sure that we can use residual plots to diagnose the reduced model. 
+
+```{r, echo = FALSE, include=FALSE}
+m2 <-  lm(wwwhr_trans~income+age_trans+educ+as.numeric(emailhr)+quallife+hlthmntl+sex,data = gss2021_cleaned_trans)
+
+
+# partial F-test
+
+anova(m2, model_trans)
+```
+
+
+```{r, echo = FALSE, include=FALSE}
+res <- rstandard(m2)
+y_hat<- fitted(m2)
+
+
+pairs(~age_trans+educ,data = gss2021_cleaned_trans)
+
+plot(y_hat, res)
+
+```
+
+The y vs. y hat graph and pairs plots are similar as the graphs of transformed model. Condition 1 and condition 2 are both satisfied. The residual plots also have no pattern, indicating no violation in the model's independence and constant variance assumptions. 
+
+```{r, echo = FALSE, include=FALSE}
+plot(gss2021_cleaned_trans$age_trans, res)
+
+qqnorm(res)
+qqline(res)
+
+```
+
+```{r, echo = FALSE, include=FALSE}
+summary(m2)
+```
+
+
+$$Table\, 4: The \; summary \; table$$
+
+|Variable|Estimate |Std. Error| t value| Pr(>abolute(t)) | 
+|:------:|:-------:|:--------:|:------:|:--------:|:--:|
+|income$1,000 to $2,999|    2.838e-02|  2.406e-02|   1.180|  0.23822 |   
+|income$3,000 to $3,999 |   7.719e-02|  3.274e-02|   2.358 | 0.01850*|  
+|income$4,000 to $4,999 |   2.360e-02|  4.971e-02 |  0.475 | 0.63501    |
+|income$5,000 to $5,999|    9.740e-04|  2.809e-02 |  0.035  |0.97234    |
+|income$6,000 to $6,999 |   1.530e-02  |3.683e-02  | 0.415 | 0.67796    |
+|income$7,000 to $7,999 |  -3.171e-02|  3.675e-02|  -0.863 | 0.38834    |
+|income$8,000 to $9,999 |   5.153e-02 | 2.290e-02 |  2.250|  0.02458* | 
+|income$10,000 to $14,999 | 3.505e-02|  1.778e-02  | 1.972 | 0.04882* | 
+|income$15,000 to $19,999| -1.416e-05 | 1.820e-02 | -0.001 | 0.99938  |
+|income$20,000 to $24,999 | 2.876e-02 | 1.823e-02|   1.578 | 0.11485  | 
+|income$25,000 or more  |   2.963e-02 | 1.530e-02 |  1.937|  0.05291.  |
+|incomerefuesed    |        2.681e-02|  1.633e-02  | 1.642 | 0.10072   |
+|age_trans    |            -5.436e-03  |5.647e-04 | -9.626 | < 2e-16 ***|
+|educ                     | 1.979e-03  |8.049e-04 |  2.459|  0.01402 * | 
+|as.numeric(emailhr)   |    3.183e-03  |2.753e-04 | 11.560| < 2e-16 ***|
+|quallifeVERY GOOD     |   -6.470e-03|  6.247e-03  |-1.036 | 0.30053    |
+|quallifeGOOD     |        -1.580e-02 | 7.151e-03|  -2.209 |0.02728* | 
+|quallifeFAIR        |     -2.670e-02 |  9.847e-03|  -2.711|  0.00677** |
+|quallifePOOR       |       4.393e-02 | 2.297e-02|   1.912|  0.05600.  |
+|hlthmntlVERY GOOD |        1.675e-03 |6.065e-03  | 0.276 | 0.78247   |
+|hlthmntlGOOD     |         1.257e-02 | 6.643e-03 |  1.892|  0.05862.  |
+|hlthmntlFAIR    |          2.640e-02 | 8.209e-03 |  3.216|  0.00132** |
+|hlthmntlPOOR   |           3.087e-02 | 1.445e-02 |  2.137|  0.03275*  |
+|sexfemale      |          -1.231e-02 | 3.977e-03 | -3.095|  0.00200**| 
+
+Finally, we want to get the form of the final model and interpret model coefficients. By observing the p value of each predictors of our transformed model, we keep only the predictors with smaller p-value and form the reduced transformed model.The final model has predictors of income, transformed age, education level, email hours, life quality, mental health and sex. 
+The equation for the final model is shown as:
+
+$Y_{log_-wwwhr} =\beta_0+\beta_1 X_{income}+\beta_2 X_{transformed_-age}+\beta_3 X_{email_-hours}+\beta_4X_{quality_-of_-life}+\beta_5X_{mental_-health}+\beta_6X_{female}$
+
+
+Income 
+Income levels are separated into 11 different groups and not every group is significant correlated with the response variable wwwwhr. 
+There are only three levels are significant relate with wwwhr. 
+The income level of $3,000 to $3,999 has positive impact of web hours with p-value of 0.0185.
+For this level, when income level increase by 1 unit, then wwwhr increase by 7.719%.
+The income level of $8,000 to $9,999 has positive impact of web hours with p-value of 0.02458.
+For this level, when income level increase by 1 unit, then wwwhr increase by 5.153%.
+The income level of $10,000 to $14,999 has positive impact of web hours with p-value of 0.04882.
+For this level, when income level increase by 1 unit, then wwwhr increase by 3.505%.
+
+
+Age
+The transformed age is ageˆ0.71 as shown in SECTION XXXX and it is significantly related with wwwhr with p-value of < 2e-16. It has estimate of -5.436e-03 that indicates it is negatively correlated with wwwhr. When transformed age increase by 1, then wwwhr decrease by 0.5436%.
+
+
+Email hours 
+It is positively related with wwwhr with p-value of < 2e-16. When email hour increase by 1 hour, then wwwhr increase by 0.3183%.
+
+
+Life quality 
+There are five levels of life quality. With dividing line of Fair, people who have better than fair life quality, their life quality is negatively related with wwwhr. And people who have worse life quality than fair, such as poor life quality would have a positive relationship with wwwhr. 
+
+
+Mental health
+The mental health is also divided into five different levels from VERY GOOD to POOR and they are all positively related with the response variable. However, only fair and poor mental health are significantly related with wwwhr. 
+For people who have fair mental health, when their mental health increase by 1, then wwwhr increase by 2.64%.
+For people who have poor mental health, when their mental health increase by 1, then wwwhr increase by 3.087%.
+
+
+Sex
+Only females are significantly related with wwwhr with p-value of 0.002 and it is negatively correlated with the response variable. When the proportion of female increase by 1, then wwwhr decrease by 1.231%. 
+
+
+\newpage
+# Data Simulation
+
+```{r,include=FALSE}
+n <- 4032
+set.seed(03)
+x_wwwhr <- sample(1:168,size = n,replace = TRUE)
+
+
+n <-  4032
+set.seed(03)
+x_income <- sample(1:13,size = n,replace = TRUE, prob = c(1/13,1/13,1/13,1/13,1/13,1/13,1/13,1/13,1/13,1/13,1/13,1/13,1/13))
+
+n <-  4032
+set.seed(03)
+x_emailhr <- sample(0:168,size = n,replace = TRUE)
+
+n <-  4032
+set.seed(03)
+x_quallife <- sample(1:5,size = n,replace = TRUE, prob = c(0.2,0.2,0.2,0.2,0.2))
+
+n <-  4032
+set.seed(03)
+x_hlthphys <- sample(1:5,size = n,replace = TRUE, prob = c(0.2,0.2,0.2,0.2,0.2))
+
+n <-  4032
+set.seed(03)
+x_hlthmntl <- sample(1:5,size = n,replace = TRUE, prob = c(0.2,0.2,0.2,0.2,0.2))
+
+n <-  4032
+set.seed(03)
+x_age_group <- sample(1:8,size = n,replace = TRUE, prob = c(1/8,1/8,1/8,1/8,1/8,1/8,1/8,1/8))
+
+n <-  4032
+set.seed(03)
+x_educ_level <- sample(1:4,size = n,replace = TRUE, prob = c(0.25,0.25,0.25,0.25))
+
+n <-  4032
+set.seed(03)
+x_sex <- sample(1:2,size = n,replace = TRUE, prob = c(0.5,0.5))
+
+df_simulation <- data.frame(x_wwwhr,x_income,x_emailhr,x_quallife,x_hlthphys,x_hlthmntl,x_age_group,x_educ_level,x_sex)
+
+df_simulation_clean <- df_simulation %>% mutate(`educ_level` = case_when(
+    x_educ_level >= 1 & x_educ_level <= 6 ~ 'elementary school',
+    x_educ_level >= 7 & x_educ_level <=8 ~ 'middle school',
+    x_educ_level >= 9 & x_educ_level <=12 ~ 'high school',
+    x_educ_level >= 13 ~ 'college or above')) %>%
+  mutate(`age_group` = case_when(
+    x_age_group >= 10 & x_age_group <= 19 ~ '10-19',    
+    x_age_group >= 20 & x_age_group <=29~ '20-29',      
+    x_age_group >= 30 & x_age_group <= 39 ~ '30-39',    
+    x_age_group >= 40 & x_age_group <=49~ '40-49',      
+    x_age_group >= 50 & x_age_group <=59~ '50-59',      
+    x_age_group >= 60 & x_age_group <=69~ '60-69',      
+    x_age_group >= 70 & x_age_group <=79~ '70-79',      
+    x_age_group >= 80 ~ '80+')) 
+levels(df_simulation_clean$x_quallife) <-c("EXCELLENT","VERY GOOD","GOOD","FAIR","POOR")
+levels(df_simulation_clean$x_hlthphys) <-c("EXCELLENT","VERY GOOD","GOOD","FAIR","POOR")
+levels(df_simulation_clean$x_hlthmntl) <-c("EXCELLENT","VERY GOOD","GOOD","FAIR","POOR")
+levels(df_simulation_clean$x_sex) <-c("male","female")
+
+write_csv(df_simulation_clean, "00-simulation.R")
+```
+
+```{r a1,echo=FALSE,fig.cap="Simulation Result"}
+par(mfrow=c(2,2))
+
+plot(table(x_income)/n,lwd=10,ylim=c(0,0.2),xlab="income",ylab="Density", cex.axis = 0.5,cex.lab = 0.5)
+lines(c(31/1767,19/1767,8/1767,3/1767,12/1767,72/1767,62/1767,63/1767,1241/1767,221/1767),lwd=4,type = "h",col="sky blue")
+legend("topright",c("Empirical pdf","pdf"),lty = 1,col = c(1,"sky blue"),lwd = c(5,2), cex = 0.5)
+title(main = ( "A. Comparison of Simulation vs. Origin income"),  line = 1, cex.main = 0.5)
+
+plot(table(x_quallife)/n,lwd=10,ylim=c(0,1),xlab="qualllife",ylab="Density", cex.axis = 0.5,cex.lab = 0.5)
+lines(c(259/1767,792/1767,553/1767,146/1767,17/1767),lwd=4,type = "h",col="sky blue")
+legend("topright",c("Empirical pdf","pdf"),lty = 1,col = c(1,"sky blue"),lwd = c(5,2), cex = 0.5)
+title(main = ( "A. Comparison of Simulation vs. Origin quality of life"),  line = 1, cex.main = 0.5)
+
+plot(table(x_hlthphys)/n,lwd=10,ylim=c(0,1),xlab="hlthphys",ylab="Density", cex.axis = 0.5,cex.lab = 0.5)
+lines(c(249/1767,526/1767,674/1767,257/1767,61/1767),lwd=4,type = "h",col="sky blue")
+legend("topright",c("Empirical pdf","pdf"),lty = 1,col = c(1,"sky blue"),lwd = c(5,2), cex = 0.5)
+title(main = ( "A. Comparison of Simulation vs. Origin physical health"),  line = 1, cex.main = 0.5)
+
+plot(table(x_hlthmntl)/n,lwd=10,ylim=c(0,1),xlab="hlthmntl",ylab="Density", cex.axis = 0.5,cex.lab = 0.5)
+lines(c(288/1767,668/1767,535/1767,227/1767,49/1767),lwd=4,type = "h",col="sky blue")
+legend("topright",c("Empirical pdf","pdf"),lty = 1,col = c(1,"sky blue"),lwd = c(5,2), cex = 0.5)
+title(main = ( "A. Comparison of Simulation vs. Origin menatl health"),  line = 1, cex.main = 0.5)
+
+
+
+```
+
+```{r a2,echo=FALSE,fig.cap="Simulation Result"}
+par(mfrow=c(2,2))
+
+plot(table(x_age_group)/n,lwd=10,ylim=c(0,0.2),xlab="age_group",ylab="Density", cex.axis = 0.5,cex.lab = 0.5)
+lines(c(2/1767,177/1767,324/1767,306/1767,331/1767,339/1767,216/1767,72/1767),lwd=4,type = "h",col="sky blue")
+legend("topright",c("Empirical pdf","pdf"),lty = 1,col = c(1,"sky blue"),lwd = c(5,2), cex = 0.5)
+title(main = ( "A. Comparison of Simulation vs. Origin age group"),  line = 1, cex.main = 0.5)
+
+plot(table(x_educ_level)/n,lwd=10,ylim=c(0,1),xlab="educ_level",ylab="Density", cex.axis = 0.5,cex.lab = 0.5)
+lines(c(1375/1767,4/1767,374/1767,13/1767),lwd=4,type = "h",col="sky blue")
+legend("topright",c("Empirical pdf","pdf"),lty = 1,col = c(1,"sky blue"),lwd = c(5,2), cex = 0.5)
+title(main = ( "A. Comparison of Simulation vs. Origin eudcation level"),  line = 1, cex.main = 0.5)
+
+plot(table(x_sex)/n,lwd=10,ylim=c(0,1),xlab="sex",ylab="Density", cex.axis = 0.5,cex.lab = 0.5)
+lines(c(814/1767,953/1767),lwd=4,type = "h",col="sky blue")
+legend("topright",c("Empirical pdf","pdf"),lty = 1,col = c(1,"sky blue"),lwd = c(5,2), cex = 0.5)
+title(main = ( "A. Comparison of Simulation vs. Origin sex"),  line = 1, cex.main = 0.5)
+
+```
+
+Figure \@ref(fig:a1) and Figure \@ref(fig:a2) show the results of our simulation. We observed that the simulated results differed significantly from the actual values. In the actual income distribution of the respondents, there are few low-salary respondents and most of them have a higher income level. In contrast, the simulated low-salary respondents are much more than the actual, while the simulated high-salary respondents are significantly lower than the reality. When we consider respondents' actual self-assessment (in terms of quality of life, physical health and mental health) of their own conditions, we find that the proportion of respondents who consider their conditions to be very good or good is significantly higher than the proportion under simulation. People were more likely to show their satisfaction with themselves. By comparing the distribution of the actual age range of the respondents with the distribution of the simulated results, we found that the age distribution of the respondents was relatively uneven, with most of the respondents being middle-aged. And the actual distribution of education level differs very much from the simulated distribution results, we found that more people actually received higher education and only a small percentage of them did not receive education beyond high school. For education, the factual results seem to be more positive than the simulated results. For the gender of the respondents, we find that the simulated results are closer to the original results, but there are in fact slightly fewer females than males, which indicates that in general the gender ratio is balanced, whereas the actual quantity of males is slightly more than that of females.
+
+
+
+\newpage
+# Result
+
+## Time spent online vs. Age
+
+```{r 11, fig.cap = "There is a strong linear relationship between age and time spent online", echo = FALSE}
+gss2021_cleaned %>% ggplot(
+    aes(x = age, y = wwwhr , colour = sex)) +
+  geom_point(alpha = 0.2) +
+  geom_smooth(method='lm', formula = y~x, se = FALSE) +
+  theme_classic() +
+  # Provide labels
+  labs(x = "age", y = "www hour per week", colour = "Sex of Respondent")
+```
+
+Figure \@ref(fig:11) demonstrates the relationship between age and the amount of time spent online per week of respondents in the various genders. We discovered that there is a strong linear relationship between age and time spent online. Age has a negative association with time spent online. As the age increases, the time spent online tends to decrease for both genders. The red and green lines have almost the same coefficient, which reflects that for respondents in different genders, the same amount of increase in age leads to the same amount of decrease in time spent online. It appears that the same age, male respondents would spend more time online than female respondents, as the red line is slightly higher than the green line. However, we also detected some extreme cases in the sample, so the linear relationship presented in the figure can only describe the general trend of the association between time spent online and the age of the respondents.
+
+\newpage
+
+## Time spent online vs. Sex
+```{r 12, fig.cap = "The majority of male and female spend 0-25 hours on the Internet each week", echo = FALSE}
+
+# With transparency (right)
+ggplot(data=gss2021_cleaned, aes(x=wwwhr, group=sex, fill=sex)) +
+    geom_density(adjust=1.5,alpha = 0.4) +
+    theme_classic() 
+
+```
+
+Figure \@ref(fig:12) exhibits the distribution of time spent online by respondents in different genders. Since we know the number of male respondents is significantly higher than that of female respondents, at almost all of the time spent online, the corresponding number of males is higher than that of females. The distribution of time spent online is right-skewed for both genders. The majority of male and female spend 0-25 hours on the Internet each week. The largest number of male and female respondents spent 5-10 hours per week online. As the internet accessing time exceeds 60 hours, for a certain fixed time spent online, the proportion of male and female respondents among all was almost the same. Generally speaking, a larger proportion of male respondents tend to spend 0-17 hours per week on the Internet compared with females. In contrast, a greater proportion of females than males spend 17-60 hours per week online. The proportion of female respondents who spend more than 60 hours online is very similar to that of male respondents.
+
+
+
+\newpage
+## Time spent online vs. Age Group
+```{r 13, fig.cap = "The distribution of time spent online is right-skewed for almost all age groups", echo = FALSE}
+# plot
+gss2021_cleaned %>%
+  ggplot( aes(x=wwwhr, color=age_group, fill=age_group)) +
+    geom_histogram(alpha=0.6, binwidth = 5) +
+    scale_fill_viridis(discrete=TRUE) +
+    scale_color_viridis(discrete=TRUE) +
+    theme_classic() +
+    theme(
+      legend.position="none",
+      panel.spacing = unit(0.1, "lines"),
+      strip.text.x = element_text(size = 8)) +
+    ylab("Number of respondents") +
+    facet_wrap(~age_group)
+```
+
+Figure \@ref(fig:13) displays the distribution of time spent online by respondents of different age groups. We notice that very few respondents are in the age range of 10-19 years old, and only a small fraction of the total number of respondents are over 80 years old. The distribution of time spent online is right-skewed for almost all age groups. In addition, it is found that the time spent online by respondents of different ages is mainly concentrated in the interval of 0-30 hours. Moreover, we also observe that a much larger proportion of respondents aged 30-39, 40-49, and 50-59 have spent more than 40 hours online than other age groups. We speculate that this phenomenon may be due to the fact that middle-aged respondents are facing greater work pressure and have to spend a lot of time on the Internet each week because of their jobs.
+
+
+
+\newpage
+## Time spent online vs. Quality of life
+```{r 14, fig.cap = "Respondents with poor quality of life are more likely to stay online for linger time", echo = FALSE}
+# With transparency (right)
+ggplot(data=gss2021_cleaned, aes(x=wwwhr, group=quallife, fill=quallife)) + geom_density(adjust=1.5,alpha = 0.4) +   
+     theme_classic() +
+      facet_wrap(~quallife)
+
+```
+
+Figure \@ref(fig:14) depicts the proportion of time spent online per week by respondents with different levels of quality of life evaluations. Since we already know the distribution of respondents with different quality of life, we are aware that the amount of respondents who chose excellent is smaller than the number of respondents who chose good and very good. However, here it is found that the distribution of time spent online per week is very similar for all three levels of respondents, with most of them spending a short amount of time online and only a small percentage of them choosing to spend a lot of hours on the Internet. For respondents with weaker quality of life ratings, we find that most of them still prefer to spend 0-30 hours online. However, we found that in these two groups, the proportion of respondents who spent more than 30 hours online was much higher than that of the previous groups. In particular, for respondents who rated their quality of life as poor, a large proportion of them were identified as having been online for more than 150 hours. In general, the respondents' Internet surfing time was basically concentrated in the range of 0-30 hours, but the proportion of respondents with poor quality of life who spent more than 150 hours online was significantly higher than that of the other groups.
+
+
+
+\newpage
+## Time spent online vs. Physical Health
+```{r 15, fig.cap = "The proportion of respondents with short Internet access hours for respondents with poor physical health was much lower than that of the other levels", echo = FALSE}
+
+# With transparency (right)
+ ggplot(data=gss2021_cleaned, aes(x=wwwhr, group=hlthphys, fill=hlthphys)) +
+    geom_density(adjust=1.5,alpha = 0.4) +  
+   theme_classic()  +
+   facet_wrap(~hlthphys)
+
+```
+
+Figure \@ref(fig:15) portrays the proportional distribution of time spent online per week among respondents who gave different ratings of physical health. For the majority of respondents who selected excellent, very good, good, and fair, they tended to use the Internet for 0-50 hours per week, with the largest proportion of respondents spending 15 hours per week on the Internet. However, we found that the proportion of respondents who indicated excellent physical health and access to the Internet for 55 hours per week is slightly greater than those who answered very good and good in terms of physical health. For those who classified themselves in the poor physical health, we noticed that the proportion of respondents with short Internet access hours was much lower than the previous levels, and the proportion of respondents with 50-100 hours of Internet access per week was significantly higher than the rest of the groups.
+
+
+\newpage
+
+## Time spent online vs. Mental Health
+```{r 16, fig.cap = "The largest proportion of respondents would like to spend 15 hours per week on the Internet", echo = FALSE}
+
+# With transparency (right)
+ggplot(data=gss2021_cleaned, aes(x=wwwhr, group=hlthmntl, fill=hlthmntl)) + geom_density(adjust=1.5,alpha = 0.4) +
+    theme_classic() + 
+  facet_wrap(~hlthmntl)
+```
+
+Figure \@ref(fig:16) reflects the proportional distribution of weekly Internet access time among respondents with different levels of mental health. Similar to the prior, respondents with above or equal average mental health were more likely to use the Internet for 0-30 hours per week, with the largest proportion of respondents spending 15 hours online. However, for respondents who were accompanied by fair or poor mental health, the proportion of those who used the Internet for 0-30 hours was not as high as the previous groups, as the proportion of those who accessed the Internet for more than 30 hours was significantly higher than the other categories. The ratio of time spent online was significantly less for respondents who chose poor than for the other groups. Respondents with poor psychological status were considerably more likely to spend over 70 hours online compared to the other groups.
+
+
+\newpage
+## Time spent online vs. Education level
+```{r 17, fig.cap = "Respondents who have received high school education or college and above education have basically the same proportion distribution of time spent online per week", echo = FALSE,warning =FALSE}
+
+ggplot(data=gss2021_cleaned, aes(x=wwwhr, group=educ_level, fill=educ_level)) +
+    geom_density(adjust=1.5,alpha = 0.4) +
+    theme_classic() 
+```
+
+Figure \@ref(fig:17) provides the percentage distribution of weekly time spent online by respondents with different education levels. It is noted that respondents who have received high school education or college and above education have basically the same proportion distribution of time spent online per week. For respondents with only middle school experience, most of them also tend to use the Internet for 0-30 hours per week. However, among the group that had only attended middle school, the proportions of those who used the Internet for 40-60 hours and 90-100 hours were significantly higher than that of respondents who had received high school education or higher. A narrower range of time spent online was observed for respondents who had only attended elementary school, with the largest number of respondents remaining on the Internet for 15 hours, but corresponding to a much lower proportion compared to respondents with other levels of education.
+
+
+\newpage
+
+## Time spent online vs. Quality of life
+```{r 18, fig.cap = "The distribution of time spent online is right-skewed for almost all age groups", echo = FALSE}
+
+ggplot(gss2021_cleaned, aes(x=quallife, y= wwwhr)) + 
+    geom_boxplot(
+        # custom boxes
+        color="#69b3a2",
+        fill="#69b3a2",
+        # Notch?
+        notch=TRUE,
+        notchwidth = 0.8,
+        # custom outliers
+        outlier.colour="#404080",
+        outlier.fill="#404080",
+        outlier.size=3 )
+```
+
+Figure \@ref(fig:18) displays the distribution of time spent online by respondents with different ratings of quality of life. The distribution of time spent online is similar for respondents who rated their quality of life as excellent, very good, good, and fair. The majority of these respondents spent between 5 and 20 hours online each week, and the median time spent on the Internet was close to 12 hours. There are many outliers in each of these groups, suggesting that most people access the Internet for a relatively short period of time, but there exist individuals who spend significant amounts of time online. However, for respondents who rated their quality of life as poor, the overall distribution of their online time was higher than the other groups. The median number of hours spent online per week for the respondents with poor quality of life even reached a striking 30 hours. Respondents with poor quality of life seemed to be more inclined to spend more time online.
+
+\newpage
+# Discussion
+
+## Age vs. Web hours
+The analysis contains sample from age of 19 to 89, and from the linear regression model, age and the web hours has a negatively correlation, which indicates that the younger people would have longer time spending online[@citeinternet], people aged from 16 to 24 years has 89.9% of population who are internet users, which is the largest group of internet users. 
+Previous research found that this could be caused by both parents and children believe they ca do better in school with a personal computer[@citerong]. 
+Thus, teenagers need to spending more time on websites for academic use, gathering information and entertainment. 
+
+## Mental health vs. Web hours
+
+The results from the above linear model has found that worse mental health could have longer time spending on websites. People who have VERY GOOD mental health have estimate of 1.675e-03, GOOD mental health have estimate of 1.257e-03, FAIR mental health have estimate of 2.640e-02 and people who have POOR mental health have estimate of 3.087e-02. 
+
+The data from the Health and Retirement Survey (HRS) in the United States from 2002 to 2008, Cotten et al. found that older adults were 33% less likely to be depressed when using the Internet[@citeimpact].
+The previous paper from 2021 has also found that the use of internet can improve people’s mental health by enriching their society activity, expanding the social interactions and increasing the contacts with families, friends and social networks[@citeimpact]. 
+
+
+## Life quality vs. Web hours  
+There are many factors to define quality of life, such as personality, work environment, leisure, and social capital [@citeuse]. Nowadays, the use of internet closely relate and affect our lives. With dividing line of FAIR life quality, the previous linear model has found that people who have FAIR, GOOD and VERY GOOD life quality spend less time online, and people have POOR life quality could rather spend more time online. An article from 2022 has found that the internet for leisure purposes has a negative effect on risk perception and positive effect on internet addition. In other words, the more time people spending on the websites, then they would have more chance to have internet addition, thus they would have a lower quality of life. 
+However, people who have POOR life quality has a positive impact on wwwhr, this could also explained by [@citeuse], that more time people spending internet on leisure purpose, then they could be harder to live without the internet, and this could result them to have a worse life quality. 
+Notably, life quality is usually determined by physical health and mental health. My model suggests that physical health does not have significant relationship with the time people spending on websites and mental health status have positive impact on the response variable, which lead to the hypothesis that life quality should also have positive impact on the response variable, which contradicts with my finding. 
+Scientists found that older adults reported lower levels of depression than younger adults and used internet far less frequently as well. Additionally, within the older adult population, those who used the internet frequently were more depressed than other older adults who did not use the internet frequently[@citedepression]. The more time people spending online might lead to more chance of depression, which caused a lower life quality, and this could be caused by the use of internet decrease face to face interactions and activities. Especially for older population, the in person interaction is important for their life quality. People could have much less emotional interactions from networking online, which could seriously impact mental health for older population, and lead to higher chance of depression. 
+
+## Limitation
+
+First of all, we know that this questionnaire is only available in English and Spanish. However, as a country with many immigrants, the United States has populations from all over the world. Over 350 languages are spoken by people of different ethnicities. Although English and Spanish are the official languages, there are still some people who are not fluent in English or Spanish. In the dataset, we also observed that almost all respondents have completed high school education or higher, but only residents who are proficient in English and Spanish were able to read and fill out the survey. Those with lower education levels, who may have immigrated from another country, were not able to understand the contents of the questionnaire because of the language barrier. Therefore, the language limitation causes the questionnaire to be addressed to not all of the U.S. residents.
+
+Secondly, we noticed that this questionnaire was too long that a lot of options were skipped by the respondents when they completed it. As a consequence, our data contained many missing values. in order to make our study proceed smoothly, we removed all the missing values in the data cleaning section, thus more than half of the data were removed. Although we derived a relationship between time spent online and several factors based on the available data, this is not representative because we are actually using only a small fraction of the data and the information reflected by them is not generalizable to the whole group.
+
+
+
+## Future improvements
+Since we found that our exploratory variables contain many categorical variables, there is not necessarily a linear relationship between them and our response variable (time spent online). In the future, we may learn new models that can be more accurate in detecting the relationship between numerical response variable and categorical exploratory variables. 
+
+In addition to that, we cannot ensure the honesty of the respondents when they fill out the survey. Therefore, we may consider proactively obtaining the recorded respondent information from some relatively authoritative organizations in the next data collection process
+
+\newpage
+# Appendix
+
+
+## Respondent's age and education years distribution
+
+```{r 19, fig.cap = "Respondent's age and education years distribution" , echo = FALSE}
+#create graph
+# install.packages("ggpubr")
+# library(ggpubr)
+ q1 <- ggplot(data=gss2021_cleaned,aes(x=age))+geom_histogram(fill="#69b3a2",color="black",bins = 30,alpha = 0.7) +
+  theme_classic() +
+  labs(x = "Age", y = "Amount of Respondents", title = "2021 US GSS Respondents' Age")+
+  theme( axis.text.x = element_blank())
+q2 <- ggplot(data=gss2021_cleaned,aes(x=educ))+geom_histogram(fill="#69b3a2",color="black",alpha = 0.7,bins = 30) +
+  theme_classic() +
+  labs(x = "Years of Education", y = "Amount of Respondents", title = "2021 US GSS Respondents' Educated years")+
+  theme( axis.text.x = element_blank())
+plot10 <- ggarrange(q1,q2)
+plot10
+```
+
+\newpage
+## wwwhr vs. sex
+
+```{r 21, fig.cap = "wwwhr vs. sex" , echo = FALSE}
+gss2021_cleaned %>%
+ ggplot( aes(x=wwwhr, color=sex, fill=sex)) +
+   geom_histogram(alpha=0.6, binwidth = 5) +
+  theme_classic() +
+   theme(
+     legend.position="none",
+     panel.spacing = unit(0.1, "lines"),
+     strip.text.x = element_text(size = 8)) +
+     ylab("Number of respondents") +
+     facet_wrap(~sex)
+
+```
+
+
+\newpage
+
+## wwwhr vs. quallife
+
+```{r 22, fig.cap = "wwwhr vs. quallife" , echo = FALSE}
+# plot
+ c <- gss2021_cleaned %>%
+  ggplot( aes(x=wwwhr, color=quallife, fill=quallife)) +
+    geom_histogram(alpha=0.6, binwidth = 5) +
+    scale_fill_viridis(discrete=TRUE) +
+    scale_color_viridis(discrete=TRUE) +
+  #  theme_ipsum() +
+    theme(
+      legend.position="none",
+      panel.spacing = unit(0.1, "lines"),
+      strip.text.x = element_text(size = 8)
+    ) +
+    xlab("") +
+    ylab("Number of respondents") +
+    facet_wrap(~quallife)
+c
+```
+
+\newpage
+
+## wwwhr vs.hlthphys
+
+```{r 23, fig.cap = "wwwhr vs.hlthphys" , echo = FALSE}
+# plot
+d <- gss2021_cleaned %>%
+  ggplot( aes(x=wwwhr, color=hlthphys, fill=hlthphys)) +
+    geom_histogram(alpha=0.6, binwidth = 5) +
+    scale_fill_viridis(discrete=TRUE) +
+    scale_color_viridis(discrete=TRUE) +
+ #   theme_ipsum() +
+    theme(
+      legend.position="none",
+      panel.spacing = unit(0.1, "lines"),
+      strip.text.x = element_text(size = 8)
+    ) +
+    xlab("") +
+    ylab("Number of respondents") +
+    facet_wrap(~hlthphys)
+d
+```
+
+\newpage 
+
+## wwwhr vs. hlthmntl
+
+```{r 24, fig.cap = "wwwhr vs. hlthmntl" , echo = FALSE}
+# plot
+ e <- gss2021_cleaned %>%
+  ggplot( aes(x=wwwhr, color=hlthmntl, fill=hlthmntl)) +
+    geom_histogram(alpha=0.6, binwidth = 5) +
+    scale_fill_viridis(discrete=TRUE) +
+    scale_color_viridis(discrete=TRUE) +
+ #   theme_ipsum() +
+    theme(
+      legend.position="none",
+      panel.spacing = unit(0.1, "lines"),
+      strip.text.x = element_text(size = 8)
+    ) +
+    xlab("") +
+    ylab("Number of respondents") +
+    facet_wrap(~hlthmntl)
+e
+```
+
+\newpage
+
+## wwwhr vs. educ_level
+
+```{r 25, fig.cap = "wwwhr vs. educ_level" , echo = FALSE}
+# plot
+f <- gss2021_cleaned %>%
+  ggplot( aes(x=wwwhr, color=educ_level, fill=educ_level)) +
+    geom_histogram(alpha=0.6, binwidth = 5) +
+    scale_fill_viridis(discrete=TRUE) +
+    scale_color_viridis(discrete=TRUE) +
+ #   theme_ipsum() +
+    theme(
+      legend.position="none",
+      panel.spacing = unit(0.1, "lines"),
+      strip.text.x = element_text(size = 8)
+    ) +
+    xlab("") +
+    ylab("Number of respondents") +
+    facet_wrap(~educ_level)
+f
+```
+
+
+\newpage
+## residual plots
+
+
+```{r, echo = FALSE,fig.height=3,fig.width=5,fig.align='center'}
+res <- rstandard(m2)
+y_hat<- fitted(m2)
+
+
+pairs(~age_trans+educ,data = gss2021_cleaned_trans)
+
+plot(y_hat, res)
+
+```
+
+```{r, echo = FALSE,fig.height=3,fig.width=5,fig.align='center'}
+plot(gss2021_cleaned_trans$age_trans, res)
+
+qqnorm(res)
+qqline(res)
+
+```
+
+\newpage
+# Bibliography
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
